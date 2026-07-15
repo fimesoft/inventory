@@ -22,11 +22,14 @@ app.use('/api/dollar-rate', dollarRateRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
-initDB()
-  .then(() => {
-    app.listen(PORT, () => console.log(`Backend corriendo en http://localhost:${PORT}`));
-  })
-  .catch((err) => {
-    console.error('Error iniciando DB:', err);
-    process.exit(1);
-  });
+initDB().catch((err) => {
+  console.error('Error iniciando DB:', err);
+  process.exit(1);
+});
+
+// Escucha local en desarrollo; en Vercel se exporta la app
+if (process.env.NODE_ENV !== 'production') {
+  app.listen(PORT, () => console.log(`Backend corriendo en http://localhost:${PORT}`));
+}
+
+export default app;
