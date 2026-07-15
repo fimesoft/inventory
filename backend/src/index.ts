@@ -22,10 +22,9 @@ app.use('/api/dollar-rate', dollarRateRouter);
 
 app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
 
-initDB().catch((err) => {
-  console.error('Error iniciando DB:', err);
-  process.exit(1);
-});
+if (process.env.DATABASE_URL) {
+  initDB().catch((err) => console.error('Error iniciando DB:', err));
+}
 
 // Escucha local en desarrollo; en Vercel se exporta la app
 if (process.env.NODE_ENV !== 'production') {

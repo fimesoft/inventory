@@ -4,7 +4,6 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Inventory',
   description: 'Gestión de inventario electrónico',
-  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
