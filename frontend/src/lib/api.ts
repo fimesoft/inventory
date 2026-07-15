@@ -1,6 +1,6 @@
 import type { Item, Stats } from './types';
 
-const BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+const BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:3001';
 
 export async function getItems(): Promise<Item[]> {
   const res = await fetch(`${BASE}/api/items`, { cache: 'no-store' });
