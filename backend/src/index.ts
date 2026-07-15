@@ -1,7 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import { initDB } from './db';
+import { initDB, pool } from './db';
 import { itemsRouter } from './routes/items';
 import { statsRouter } from './routes/stats';
 import { uploadRouter } from './routes/upload';
@@ -20,7 +20,14 @@ app.use('/api/stats', statsRouter);
 app.use('/api/upload', uploadRouter);
 app.use('/api/dollar-rate', dollarRateRouter);
 
-app.get('/api/health', (_req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', async (_req, res) => {
+  try {
+    await pool.query('SELECT 1');
+    res.json({ status: 'ok', db: 'connected' });
+  } catch (err: any) {
+    res.status(500).json({ status: 'ok', db: 'disconnected', error: err.message });
+  }
+});
 
 if (process.env.DATABASE_URL) {
   initDB().catch((err) => console.error('Error iniciando DB:', err));
