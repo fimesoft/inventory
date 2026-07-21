@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { HamburgerMenu } from './HamburgerMenu';
+import { useUser } from '@/lib/userContext';
 import styles from './AppLayout.module.css';
 
 interface AppLayoutProps {
@@ -10,6 +11,8 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children, title }: AppLayoutProps) {
+  const { user, clearUser } = useUser();
+
   return (
     <div className={styles.wrapper}>
       <header className={styles.header}>
@@ -17,7 +20,20 @@ export function AppLayout({ children, title }: AppLayoutProps) {
         <Link href="/" className={styles.titleLink}>
           <h1 className={styles.title}>{title || 'Inventory'}</h1>
         </Link>
-        <div className={styles.spacer} />
+        {user ? (
+          <button
+            onClick={clearUser}
+            className={styles.userBtn}
+            title={`${user.nombre} ${user.apellido} — Salir`}
+            aria-label="Cerrar sesión"
+          >
+            <span className={styles.userInitial}>
+              {user.nombre[0].toUpperCase()}
+            </span>
+          </button>
+        ) : (
+          <div className={styles.spacer} />
+        )}
       </header>
 
       <main className={styles.main}>

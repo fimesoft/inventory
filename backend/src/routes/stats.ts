@@ -4,6 +4,11 @@ import { pool } from '../db';
 export const statsRouter = Router();
 
 statsRouter.get('/', async (req: Request, res: Response) => {
+  const userId = req.headers['x-user-id'] as string;
+  if (!userId) {
+    res.status(401).json({ error: 'Usuario requerido' });
+    return;
+  }
   const dollarRate = parseFloat((req.query.dollarRate as string) || '1200');
 
   try {
@@ -13,7 +18,8 @@ statsRouter.get('/', async (req: Request, res: Response) => {
         COALESCE(SUM(cantidad * venta_pesos), 0)   AS venta_total,
         COUNT(*)                                    AS total_items
       FROM items
-    `);
+      WHERE user_id = $1
+    `, [userId]);
 
     const row = result.rows[0];
     const inversionTotal = parseFloat(row.inversion_total);
@@ -27,7 +33,7 @@ statsRouter.get('/', async (req: Request, res: Response) => {
       totalItems: parseInt(row.total_items),
       dollarRate,
     });
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'Error al calcular estadísticas' });
   }
 });

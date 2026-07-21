@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useUser } from '@/lib/userContext';
 import styles from './HamburgerMenu.module.css';
 
 const NAV_ITEMS = [
@@ -15,6 +16,7 @@ export function HamburgerMenu() {
   const [open, setOpen] = useState(false);
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
+  const { user, clearUser } = useUser();
 
   useEffect(() => { setMounted(true); }, []);
 
@@ -51,6 +53,22 @@ export function HamburgerMenu() {
             );
           })}
         </nav>
+
+        {user && (
+          <div className={styles.userSection}>
+            <div className={styles.userInfo}>
+              <span className={styles.userName}>{user.nombre} {user.apellido}</span>
+              <span className={styles.userDni}>DNI {user.dni}</span>
+            </div>
+            <button
+              onClick={() => { clearUser(); setOpen(false); }}
+              className={styles.logoutBtn}
+            >
+              <LogoutIcon />
+              Cambiar usuario
+            </button>
+          </div>
+        )}
 
         <div className={styles.drawerFooter}>
           <p className={styles.footerText}>
@@ -124,6 +142,16 @@ function ListIcon() {
       <line x1="3" y1="6" x2="3.01" y2="6" />
       <line x1="3" y1="12" x2="3.01" y2="12" />
       <line x1="3" y1="18" x2="3.01" y2="18" />
+    </svg>
+  );
+}
+
+function LogoutIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4" />
+      <polyline points="16 17 21 12 16 7" />
+      <line x1="21" y1="12" x2="9" y2="12" />
     </svg>
   );
 }

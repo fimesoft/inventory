@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { getStats, fetchDollarRate } from '@/lib/api';
+import { useUser } from '@/lib/userContext';
 import type { Stats } from '@/lib/types';
 import { StatCard } from './StatCard';
 import styles from './Dashboard.module.css';
@@ -11,6 +12,7 @@ function fmt(n: number, prefix = '$', decimals = 0) {
 }
 
 export function Dashboard() {
+  const { user } = useUser();
   const [stats, setStats] = useState<Stats | null>(null);
   const [dollarRate, setDollarRate] = useState<number>(0);
   const [inputRate, setInputRate] = useState<string>('');
@@ -21,17 +23,18 @@ export function Dashboard() {
   const [error, setError] = useState<string | null>(null);
 
   const loadStats = useCallback(async (rate: number) => {
+    if (!user) return;
     setLoading(true);
     setError(null);
     try {
-      const data = await getStats(rate);
+      const data = await getStats(rate, user.id);
       setStats(data);
     } catch {
       setError('Error al cargar estadísticas. Verificá que el backend esté corriendo.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => {
     const init = async () => {
@@ -61,6 +64,7 @@ export function Dashboard() {
   };
 
   const handleFetchRate = async () => {
+    if (!user) return;
     setFetchingRate(true);
     setRateError(null);
     try {

@@ -16,6 +16,12 @@ interface CsvRow {
 }
 
 uploadRouter.post('/', upload.single('file'), async (req: Request, res: Response) => {
+  const userId = req.headers['x-user-id'] as string;
+  if (!userId) {
+    res.status(401).json({ error: 'Usuario requerido' });
+    return;
+  }
+
   if (!req.file) {
     res.status(400).json({ error: 'No se recibió ningún archivo' });
     return;
@@ -35,7 +41,7 @@ uploadRouter.post('/', upload.single('file'), async (req: Request, res: Response
     const client = await pool.connect();
     try {
       await client.query('BEGIN');
-      if (replace) await client.query('DELETE FROM items');
+      if (replace) await client.query('DELETE FROM items WHERE user_id = $1', [userId]);
 
       for (const row of rows) {
         const cantidad = parseInt(row.CANTIDAD);
@@ -47,8 +53,8 @@ uploadRouter.post('/', upload.single('file'), async (req: Request, res: Response
         }
 
         await client.query(
-          'INSERT INTO items (cantidad, nombre, costo_dolar, venta_pesos) VALUES ($1,$2,$3,$4)',
-          [cantidad, row.NOMBRE, costoDolar, ventaPesos]
+          'INSERT INTO items (user_id, cantidad, nombre, costo_dolar, venta_pesos) VALUES ($1,$2,$3,$4,$5)',
+          [userId, cantidad, row.NOMBRE, costoDolar, ventaPesos]
         );
       }
 
@@ -60,7 +66,7 @@ uploadRouter.post('/', upload.single('file'), async (req: Request, res: Response
     } finally {
       client.release();
     }
-  } catch (err) {
+  } catch {
     res.status(500).json({ error: 'Error al procesar el CSV' });
   }
 });

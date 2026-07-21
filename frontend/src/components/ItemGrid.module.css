@@ -194,7 +194,52 @@
   color: var(--green-light);
 }
 
+/* Bottom Sheet */
+.sheetBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background-color: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.sheet {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 430px;
+  z-index: 50;
+  background-color: var(--card);
+  border-top: 1px solid var(--border);
+  border-radius: 1.25rem 1.25rem 0 0;
+  padding: 0 1rem 2rem;
+  padding-bottom: max(2rem, env(safe-area-inset-bottom));
+  animation: slideUp 0.25s ease-out;
+}
+
+.sheetHandle {
+  width: 2.5rem;
+  height: 0.25rem;
+  background-color: var(--border);
+  border-radius: 9999px;
+  margin: 0.75rem auto 1.25rem;
+}
+
+@keyframes slideUp {
+  from { transform: translateX(-50%) translateY(100%); }
+  to   { transform: translateX(-50%) translateY(0); }
+}
+
 /* Item Form */
+.formError {
+  font-size: 0.8125rem;
+  color: var(--red);
+  padding: 0.125rem 0;
+}
+
 .form {
   background-color: var(--card);
   border: 1px solid var(--accent-border);

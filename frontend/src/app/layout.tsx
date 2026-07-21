@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import { UserProvider } from '@/lib/userContext';
+import { DniGate } from '@/components/DniGate';
 
 export const metadata: Metadata = {
   title: 'Inventory',
@@ -16,7 +18,13 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es">
-      <body>{children}</body>
+      <body>
+        <UserProvider>
+          <DniGate>
+            {children}
+          </DniGate>
+        </UserProvider>
+      </body>
     </html>
   );
 }

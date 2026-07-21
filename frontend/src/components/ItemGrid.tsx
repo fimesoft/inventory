@@ -1,7 +1,9 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import { createPortal } from 'react-dom';
 import { getItems, deleteItem, createItem, updateItem } from '@/lib/api';
+import { useUser } from '@/lib/userContext';
 import type { Item } from '@/lib/types';
 import styles from './ItemGrid.module.css';
 
@@ -10,24 +12,29 @@ function fmt(n: number) {
 }
 
 export function ItemGrid() {
+  const { user } = useUser();
   const [items, setItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editItem, setEditItem] = useState<Item | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const load = useCallback(async () => {
+    if (!user) return;
     setLoading(true);
     try {
-      const data = await getItems();
+      const data = await getItems(user.id);
       setItems(data);
     } catch {
       setError('Error al cargar items');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [user]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -36,30 +43,48 @@ export function ItemGrid() {
   );
 
   const handleDelete = async (id: number) => {
-    if (!confirm('¿Eliminar este item?')) return;
+    if (!user || !confirm('¿Eliminar este item?')) return;
+    setError(null);
     try {
-      await deleteItem(id);
+      await deleteItem(id, user.id);
       setItems((prev) => prev.filter((i) => i.id !== id));
     } catch {
       setError('Error al eliminar');
     }
   };
 
-  const handleSave = async (data: Omit<Item, 'id' | 'created_at'>) => {
-    try {
-      if (editItem) {
-        const updated = await updateItem(editItem.id, data);
-        setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
-      } else {
-        const created = await createItem(data);
-        setItems((prev) => [created, ...prev]);
-      }
-      setShowForm(false);
-      setEditItem(null);
-    } catch {
-      setError('Error al guardar item');
+  const handleSave = async (data: Omit<Item, 'id' | 'user_id' | 'created_at'>): Promise<void> => {
+    if (!user) return;
+    setError(null);
+    if (editItem) {
+      const updated = await updateItem(editItem.id, data, user.id);
+      setItems((prev) => prev.map((i) => (i.id === updated.id ? updated : i)));
+    } else {
+      const created = await createItem(data, user.id);
+      setItems((prev) => [created, ...prev]);
     }
+    setShowForm(false);
+    setEditItem(null);
   };
+
+  const openNew = () => { setEditItem(null); setShowForm(true); };
+  const openEdit = (item: Item) => { setEditItem(item); setShowForm(true); };
+  const closeForm = () => { setShowForm(false); setEditItem(null); };
+
+  const sheet = showForm && mounted ? (
+    <>
+      <div className={styles.sheetBackdrop} onClick={closeForm} />
+      <aside className={styles.sheet}>
+        <div className={styles.sheetHandle} />
+        <ItemForm
+          key={editItem?.id ?? 'new'}
+          initial={editItem}
+          onSave={handleSave}
+          onCancel={closeForm}
+        />
+      </aside>
+    </>
+  ) : null;
 
   return (
     <div className={styles.stack}>
@@ -75,7 +100,7 @@ export function ItemGrid() {
           />
         </div>
         <button
-          onClick={() => { setEditItem(null); setShowForm(true); }}
+          onClick={openNew}
           className={styles.addBtn}
           aria-label="Agregar item"
         >
@@ -84,14 +109,6 @@ export function ItemGrid() {
       </div>
 
       {error && <div className={styles.errorBox}>{error}</div>}
-
-      {showForm && (
-        <ItemForm
-          initial={editItem}
-          onSave={handleSave}
-          onCancel={() => { setShowForm(false); setEditItem(null); }}
-        />
-      )}
 
       {loading ? (
         <div className={styles.skeletons}>
@@ -108,12 +125,14 @@ export function ItemGrid() {
             <ItemCard
               key={item.id}
               item={item}
-              onEdit={() => { setEditItem(item); setShowForm(true); }}
+              onEdit={() => openEdit(item)}
               onDelete={() => handleDelete(item.id)}
             />
           ))}
         </div>
       )}
+
+      {mounted && createPortal(sheet, document.body)}
     </div>
   );
 }
@@ -151,7 +170,7 @@ function ItemCard({ item, onEdit, onDelete }: { item: Item; onEdit: () => void; 
 
 interface ItemFormProps {
   initial: Item | null;
-  onSave: (data: Omit<Item, 'id' | 'created_at'>) => void;
+  onSave: (data: Omit<Item, 'id' | 'user_id' | 'created_at'>) => Promise<void>;
   onCancel: () => void;
 }
 
@@ -162,18 +181,27 @@ function ItemForm({ initial, onSave, onCancel }: ItemFormProps) {
     costo_dolar: String(initial?.costo_dolar ?? ''),
     venta_pesos: String(initial?.venta_pesos ?? ''),
   });
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const set = (k: keyof typeof form) => (e: React.ChangeEvent<HTMLInputElement>) =>
     setForm((p) => ({ ...p, [k]: e.target.value }));
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    onSave({
-      nombre: form.nombre,
-      cantidad: parseInt(form.cantidad),
-      costo_dolar: parseFloat(form.costo_dolar),
-      venta_pesos: parseFloat(form.venta_pesos),
-    });
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave({
+        nombre: form.nombre,
+        cantidad: parseInt(form.cantidad),
+        costo_dolar: parseFloat(form.costo_dolar),
+        venta_pesos: parseFloat(form.venta_pesos),
+      });
+    } catch {
+      setError('Error al guardar. Intentá de nuevo.');
+      setSaving(false);
+    }
   };
 
   return (
@@ -202,7 +230,7 @@ function ItemForm({ initial, onSave, onCancel }: ItemFormProps) {
           placeholder="USD"
           value={form.costo_dolar}
           onChange={set('costo_dolar')}
-          required min="0"
+          required min="0" step="any"
           className={styles.textInput}
           inputMode="decimal"
         />
@@ -211,14 +239,19 @@ function ItemForm({ initial, onSave, onCancel }: ItemFormProps) {
           placeholder="Pesos"
           value={form.venta_pesos}
           onChange={set('venta_pesos')}
-          required min="0"
+          required min="0" step="any"
           className={styles.textInput}
           inputMode="decimal"
         />
       </div>
+      {error && <p className={styles.formError}>{error}</p>}
       <div className={styles.btnRow}>
-        <button type="button" onClick={onCancel} className={styles.cancelBtn}>Cancelar</button>
-        <button type="submit" className={styles.saveBtn}>Guardar</button>
+        <button type="button" onClick={onCancel} disabled={saving} className={styles.cancelBtn}>
+          Cancelar
+        </button>
+        <button type="submit" disabled={saving} className={styles.saveBtn}>
+          {saving ? 'Guardando...' : 'Guardar'}
+        </button>
       </div>
     </form>
   );

@@ -37,6 +37,30 @@
   width: 2rem;
 }
 
+.userBtn {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  background-color: var(--accent-dim);
+  border: 1px solid var(--accent-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: var(--transition);
+}
+
+.userBtn:active {
+  background-color: var(--muted);
+}
+
+.userInitial {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--accent-light);
+  line-height: 1;
+}
+
 .main {
   flex: 1;
   padding: 1.25rem 1rem 2rem;

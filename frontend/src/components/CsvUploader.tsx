@@ -2,9 +2,11 @@
 
 import { useState, useRef, DragEvent, ChangeEvent } from 'react';
 import { uploadCsv } from '@/lib/api';
+import { useUser } from '@/lib/userContext';
 import styles from './CsvUploader.module.css';
 
 export function CsvUploader() {
+  const { user } = useUser();
   const [file, setFile] = useState<File | null>(null);
   const [replace, setReplace] = useState(false);
   const [dragging, setDragging] = useState(false);
@@ -34,11 +36,11 @@ export function CsvUploader() {
   };
 
   const handleUpload = async () => {
-    if (!file) return;
+    if (!file || !user) return;
     setLoading(true);
     setStatus(null);
     try {
-      const res = await uploadCsv(file, replace);
+      const res = await uploadCsv(file, replace, user.id);
       setStatus({ type: 'success', msg: res.message });
       setFile(null);
       if (inputRef.current) inputRef.current.value = '';
